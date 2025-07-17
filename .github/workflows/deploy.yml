@@ -1,4 +1,4 @@
-name: Deploy AWS with Terraform inside Docker
+name: Deploy AWS S3 using Terraform in Docker
 
 on:
   push:
@@ -6,14 +6,14 @@ on:
       - main
 
 jobs:
-  deploy:
+  terraform:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repo
+    - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Build Docker image
+    - name: Build Docker image with Terraform and AWS CLI
       run: docker build -t terraform-runner .
 
     - name: Terraform Init
@@ -23,7 +23,18 @@ jobs:
           -w /workspace \
           -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
           -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+          -e AWS_REGION=${{ secrets.AWS_REGION }} \
           terraform-runner init
+
+    - name: Terraform Plan
+      run: |
+        docker run --rm \
+          -v ${{ github.workspace }}:/workspace \
+          -w /workspace \
+          -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
+          -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+          -e AWS_REGION=${{ secrets.AWS_REGION }} \
+          terraform-runner plan
 
     - name: Terraform Apply
       run: |
@@ -32,4 +43,5 @@ jobs:
           -w /workspace \
           -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
           -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+          -e AWS_REGION=${{ secrets.AWS_REGION }} \
           terraform-runner apply -auto-approve
